@@ -80,11 +80,7 @@ const Navbar = ({
   };
 
   const handleLogoClick = () => {
-    if (user) {
-      navigate('/dashboard');
-    } else {
-      navigate('/');
-    }
+    navigate('/');
   };
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
