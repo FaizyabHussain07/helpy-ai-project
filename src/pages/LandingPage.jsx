@@ -14,36 +14,11 @@ const LandingPage = () => {
   return (
     <div style={{ minHeight: '100vh' }}>
       {/* Public Navbar */}
-      <nav className="navbar">
-        <div className="nav-logo">
-          <div className="logo-icon">H</div>
-          <span style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-primary)' }}>
-            HelpHub AI
-          </span>
-        </div>
-        <div className="nav-links">
-          {publicNavLinks.map((link) => (
-            <a
-              key={link.path}
-              href={link.path}
-              className={`nav-link ${link.path === '/' ? 'nav-link-active' : ''}`}
-            >
-              {link.label}
-            </a>
-          ))}
-        </div>
-        <div className="nav-actions">
-          <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-            Live community signals
-          </span>
-          <button 
-            className="btn-primary"
-            onClick={() => navigate('/login')}
-          >
-            Join the platform
-          </button>
-        </div>
-      </nav>
+      <Navbar
+        showLinks={true}
+        customLinks={publicNavLinks}
+        activeLink="/"
+      />
 
       <div className="page-container">
         {/* SECTION 1 — Hero */}
