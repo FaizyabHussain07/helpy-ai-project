@@ -85,7 +85,8 @@ const OnboardingPage = () => {
   };
 
   const handleNext = () => {
-    if (step < 4) {
+    const totalSteps = getTotalSteps();
+    if (step < totalSteps) {
       setStep(step + 1);
     }
   };
