@@ -94,24 +94,38 @@ const OnboardingPage = () => {
       alert('Please enter your name to continue');
       return;
     }
-    if (step === 3 && (selectedRole === 'helper' || selectedRole === 'both')) {
+
+    // Helper-specific validation (step 3 for helper, step 3 for both)
+    if (step === 3 && selectedRole === 'helper') {
       if (skills.length === 0) {
         alert('Please select at least one skill to continue');
         return;
       }
-      if (expertise.length === 0) {
-        alert('Please select at least one area of expertise to continue');
-        return;
-      }
     }
-    if (step === 4 && (selectedRole === 'seeker' || selectedRole === 'both')) {
+
+    // Seeker-specific validation (step 3 for seeker, step 4 for both)
+    if (selectedRole === 'seeker' && step === 3) {
       if (interests.length === 0) {
         alert('Please select at least one interest to continue');
         return;
       }
-      if (helpNeeds.length === 0) {
-        alert('Please select at least one help need to continue');
-        return;
+    }
+
+    // Both role validation - step 3 is helper, step 4 is seeker
+    if (selectedRole === 'both') {
+      if (step === 3) {
+        // Helper step - only skills required
+        if (skills.length === 0) {
+          alert('Please select at least one skill to continue');
+          return;
+        }
+      }
+      if (step === 4) {
+        // Seeker step - only interests required
+        if (interests.length === 0) {
+          alert('Please select at least one interest to continue');
+          return;
+        }
       }
     }
 
