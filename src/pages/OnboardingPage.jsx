@@ -105,8 +105,8 @@ const OnboardingPage = () => {
 
     // Seeker-specific validation (step 3 for seeker, step 4 for both)
     if (selectedRole === 'seeker' && step === 3) {
-      if (interests.length === 0) {
-        alert('Please select at least one interest to continue');
+      if (helpNeeds.length === 0) {
+        alert('Please select at least one help category to continue');
         return;
       }
     }
@@ -121,9 +121,9 @@ const OnboardingPage = () => {
         }
       }
       if (step === 4) {
-        // Seeker step - only interests required
-        if (interests.length === 0) {
-          alert('Please select at least one interest to continue');
+        // Seeker step - only help needs required
+        if (helpNeeds.length === 0) {
+          alert('Please select at least one help category to continue');
           return;
         }
       }
