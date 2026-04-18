@@ -85,6 +85,36 @@ const OnboardingPage = () => {
   };
 
   const handleNext = () => {
+    // Validation for each step
+    if (step === 1 && !selectedRole) {
+      alert('Please select a role to continue');
+      return;
+    }
+    if (step === 2 && !name.trim()) {
+      alert('Please enter your name to continue');
+      return;
+    }
+    if (step === 3 && (selectedRole === 'helper' || selectedRole === 'both')) {
+      if (skills.length === 0) {
+        alert('Please select at least one skill to continue');
+        return;
+      }
+      if (expertise.length === 0) {
+        alert('Please select at least one area of expertise to continue');
+        return;
+      }
+    }
+    if (step === 4 && (selectedRole === 'seeker' || selectedRole === 'both')) {
+      if (interests.length === 0) {
+        alert('Please select at least one interest to continue');
+        return;
+      }
+      if (helpNeeds.length === 0) {
+        alert('Please select at least one help need to continue');
+        return;
+      }
+    }
+
     const totalSteps = getTotalSteps();
     if (step < totalSteps) {
       setStep(step + 1);
@@ -98,8 +128,10 @@ const OnboardingPage = () => {
   };
 
   const handleComplete = async () => {
+    console.log('handleComplete called');
     setLoading(true);
     try {
+      console.log('Updating user profile...');
       const updateData = {
         displayName: name,
         location,
@@ -130,10 +162,13 @@ const OnboardingPage = () => {
         updateData.requestsCount = userData?.requestsCount || 0;
       }
 
+      console.log('Update data:', updateData);
       await updateDoc(doc(db, 'users', user.uid), updateData);
+      console.log('Profile updated successfully');
       navigate('/dashboard');
     } catch (err) {
       console.error('Error updating profile:', err);
+      alert('Error: ' + (err.message || 'Failed to complete onboarding'));
     } finally {
       setLoading(false);
     }
@@ -302,7 +337,6 @@ const OnboardingPage = () => {
               className="btn-primary"
               onClick={handleNext}
               style={{ width: '100%' }}
-              disabled={!selectedRole}
             >
               Continue
             </button>
@@ -388,7 +422,6 @@ const OnboardingPage = () => {
                 className="btn-primary"
                 onClick={handleNext}
                 style={{ flex: 1 }}
-                disabled={!name.trim()}
               >
                 Next
               </button>
@@ -578,7 +611,7 @@ const OnboardingPage = () => {
                   className="btn-primary"
                   onClick={selectedRole === 'helper' ? handleComplete : handleNext}
                   style={{ flex: 1 }}
-                  disabled={skills.length === 0 || loading}
+                  disabled={loading}
                 >
                   {loading ? 'Saving...' : selectedRole === 'helper' ? 'Complete' : 'Continue'}
                 </button>
@@ -663,7 +696,6 @@ const OnboardingPage = () => {
                   className="btn-primary"
                   onClick={handleNext}
                   style={{ flex: 1 }}
-                  disabled={skills.length === 0}
                 >
                   Continue
                 </button>
