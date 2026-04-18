@@ -1,0 +1,185 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================
+    // HELPYTICS AI - SECURE FIRESTORE RULES
+    // Production-ready security for community help platform
+    // ============================================
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserData().role == "admin";
+    }
+
+    function isHelperOrBoth() {
+      return isAuthenticated() && (getUserData().role == "helper" || getUserData().role == "both");
+    }
+
+    // ============================================
+    // USERS COLLECTION
+    // ============================================
+    match /users/{userId} {
+      // Anyone can read user profiles (needed for displaying request authors, helpers)
+      allow read: if isAuthenticated();
+
+      // Users can only create their own profile during registration
+      allow create: if isOwner(userId) 
+        && request.resource.data.uid == userId
+        && request.resource.data.keys().hasAll(['uid', 'email', 'displayName', 'role', 'createdAt']);
+
+      // Users can only update their own profile
+      // Restrict sensitive fields that shouldn't be self-modified
+      allow update: if isOwner(userId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['uid', 'email', 'contributions', 'trustScore', 'badges']);
+
+      // Only admins can delete user accounts
+      allow delete: if isAdmin();
+    }
+
+    // ============================================
+    // REQUESTS COLLECTION (Help Requests)
+    // ============================================
+    match /requests/{requestId} {
+      // Any authenticated user can read requests
+      allow read: if isAuthenticated();
+
+      // Any authenticated user can create a request
+      // Must set themselves as the author
+      allow create: if isAuthenticated()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.keys().hasAll(['title', 'description', 'category', 'urgency', 'status', 'authorId', 'authorName', 'createdAt'])
+        && request.resource.data.status == "open"
+        && request.resource.data.helperCount == 0;
+
+      // Update permissions:
+      // 1. Author can update their own request (except helperCount, helpers array - managed by system)
+      // 2. Helpers can add themselves to helpers array
+      // 3. Author can mark as solved
+      allow update: if isAuthenticated() && (
+        // Author editing their own request
+        (resource.data.authorId == request.auth.uid 
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['authorId', 'authorName', 'helperCount']))
+        ||
+        // Helper offering help (adding to helpers array)
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['helpers', 'helperCount', 'updatedAt'])
+          && request.resource.data.helperCount == resource.data.helperCount + 1
+          && request.resource.data.helpers.size() > resource.data.helpers.size())
+        ||
+        // Author marking as solved
+        (resource.data.authorId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'solvedAt', 'updatedAt', 'ratings'])
+          && request.resource.data.status == "solved")
+        ||
+        // Soft delete by author
+        (resource.data.authorId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'deletedAt', 'updatedAt'])
+          && request.resource.data.status == "deleted")
+        ||
+        // Admin can update anything
+        isAdmin()
+      );
+
+      // Only author or admin can delete (hard delete)
+      allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    // ============================================
+    // NOTIFICATIONS COLLECTION
+    // ============================================
+    match /notifications/{notificationId} {
+      // Users can only read their own notifications
+      allow read: if isAuthenticated() && resource.data.toUid == request.auth.uid;
+
+      // System creates notifications (or admin)
+      // Validates required fields
+      allow create: if isAuthenticated() 
+        && (isAdmin() || request.resource.data.fromUid == request.auth.uid)
+        && request.resource.data.keys().hasAll(['toUid', 'fromUid', 'fromName', 'type', 'read', 'createdAt']);
+
+      // Users can only update read status of their own notifications
+      allow update: if isAuthenticated() 
+        && resource.data.toUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'updatedAt']);
+
+      // Users can delete their own notifications, admin can delete any
+      allow delete: if isAuthenticated() && (resource.data.toUid == request.auth.uid || isAdmin());
+    }
+
+    // ============================================
+    // CONVERSATIONS COLLECTION
+    // ============================================
+    match /conversations/{conversationId} {
+      // Participants can read their conversations
+      allow read: if isAuthenticated() 
+        && resource.data.participants.hasAny([request.auth.uid]);
+
+      // Participants can create conversations
+      allow create: if isAuthenticated()
+        && request.resource.data.participants.hasAny([request.auth.uid])
+        && request.resource.data.keys().hasAll(['participants', 'lastMessage', 'updatedAt']);
+
+      // Only participants can update
+      allow update: if isAuthenticated() 
+        && resource.data.participants.hasAny([request.auth.uid])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastMessage', 'updatedAt']);
+
+      // Only participants or admin can delete
+      allow delete: if isAuthenticated() 
+        && (resource.data.participants.hasAny([request.auth.uid]) || isAdmin());
+    }
+
+    // ============================================
+    // MESSAGES SUBCOLLECTION (inside conversations)
+    // ============================================
+    match /conversations/{conversationId}/messages/{messageId} {
+      // Only conversation participants can read messages
+      allow read: if isAuthenticated()
+        && get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants.hasAny([request.auth.uid]);
+
+      // Participants can send messages
+      allow create: if isAuthenticated()
+        && get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants.hasAny([request.auth.uid])
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.keys().hasAll(['senderId', 'senderName', 'text', 'createdAt']);
+
+      // Messages cannot be edited (immutable)
+      allow update: if false;
+
+      // Only sender or admin can delete their messages
+      allow delete: if isAuthenticated() 
+        && (resource.data.senderId == request.auth.uid || isAdmin());
+    }
+
+    // ============================================
+    // AI INSIGHTS / CACHE (Optional - for storing AI-generated insights)
+    // ============================================
+    match /aiInsights/{insightId} {
+      // Any authenticated user can read AI insights
+      allow read: if isAuthenticated();
+
+      // Only system (admin) can create/update AI insights
+      allow write: if isAdmin();
+    }
+
+    // ============================================
+    // DENY ALL DEFAULT
+    // ============================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+  }
+}
