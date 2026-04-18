@@ -238,118 +238,192 @@ const MessagesPage = () => {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '55% 40%', gap: '5%', marginTop: '32px' }}>
-          {/* Left - Conversation Stream */}
-          <div className="white-card" style={{ padding: '28px' }}>
-            <span className="card-label" style={{ display: 'block', marginBottom: '4px' }}>
-              CONVERSATION STREAM
-            </span>
-            <h2 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '24px' }}>
-              Recent messages
-            </h2>
-
-            {loading ? (
-              <div style={{ textAlign: 'center', padding: '48px' }}>
-                <div className="spinner" style={{ margin: '0 auto' }} />
-              </div>
-            ) : conversations.length === 0 ? (
-              <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px' }}>
-                No conversations yet. Start by sending a message!
+        <div style={{ display: 'grid', gridTemplateColumns: '35% 62%', gap: '3%', marginTop: '32px', minHeight: '600px' }}>
+          {/* Left - Conversation List */}
+          <div className="white-card" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '20px', borderBottom: '1px solid var(--border)' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 800 }}>
+                Messages
+              </h2>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
               </p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {conversations.map((convo, idx) => {
-                  const otherUser = getOtherParticipant(convo);
-                  return (
-                    <div 
-                      key={convo.id}
-                      style={{
-                        padding: '16px 0',
-                        borderBottom: idx < conversations.length - 1 ? '1px solid var(--border)' : 'none'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <Avatar name={otherUser.displayName} size={36} />
-                        <div style={{ flex: 1 }}>
-                          <p style={{ fontSize: '14px', fontWeight: 600 }}>
-                            {convo.lastMessage?.slice(0, 60)}{convo.lastMessage?.length > 60 ? '...' : ''}
-                          </p>
-                          <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                            With {otherUser.displayName}
-                          </p>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '48px' }}>
+                  <div className="spinner" style={{ margin: '0 auto' }} />
+                </div>
+              ) : conversations.length === 0 ? (
+                <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px' }}>
+                  No conversations yet. Accept a helper to start chatting!
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {conversations.map((convo) => {
+                    const otherUser = getOtherParticipant(convo);
+                    const isActive = activeConversation?.id === convo.id;
+                    return (
+                      <div 
+                        key={convo.id}
+                        onClick={() => selectConversation(convo)}
+                        style={{
+                          padding: '16px 20px',
+                          cursor: 'pointer',
+                          background: isActive ? 'var(--teal-light)' : 'white',
+                          borderLeft: isActive ? '3px solid var(--teal)' : '3px solid transparent',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <Avatar name={otherUser.displayName} size={44} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: '14px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {otherUser.displayName}
+                            </p>
+                            <p style={{ fontSize: '13px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {getLastMessagePreview(convo)}
+                            </p>
+                            {convo.requestTitle && (
+                              <p style={{ fontSize: '11px', color: 'var(--teal)', marginTop: '2px' }}>
+                                Re: {convo.requestTitle.slice(0, 30)}{convo.requestTitle.length > 30 ? '...' : ''}
+                              </p>
+                            )}
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <p style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                              {convo.lastMessage?.createdAt ? formatTime(convo.lastMessage.createdAt) : ''}
+                            </p>
+                          </div>
                         </div>
-                        <span className="badge badge-teal" style={{ fontSize: '11px' }}>
-                          {formatTime(convo.updatedAt)}
-                        </span>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Right - Send Message */}
-          <div className="white-card" style={{ padding: '28px', height: 'fit-content' }}>
-            <span className="card-label" style={{ display: 'block', marginBottom: '4px' }}>
-              SEND MESSAGE
-            </span>
-            <h2 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '24px' }}>
-              Start a conversation
-            </h2>
+          {/* Right - Chat Window */}
+          <div className="white-card" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            {activeConversation ? (
+              <>
+                {/* Chat Header */}
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button 
+                      onClick={() => setActiveConversation(null)}
+                      style={{ display: 'none' }} // Hidden on desktop, shown on mobile
+                    >
+                      <ArrowLeft size={20} />
+                    </button>
+                    <Avatar name={otherUser?.displayName} size={40} />
+                    <div>
+                      <p style={{ fontSize: '16px', fontWeight: 700 }}>{otherUser?.displayName}</p>
+                      <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        {otherUser?.role === 'helper' ? 'Helper' : otherUser?.role === 'seeker' ? 'Seeker' : 'Member'}
+                      </p>
+                    </div>
+                  </div>
+                  {requestInfo && (
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>About request:</p>
+                      <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--teal)' }}>
+                        {requestInfo.title?.slice(0, 25)}{requestInfo.title?.length > 25 ? '...' : ''}
+                      </p>
+                    </div>
+                  )}
+                </div>
 
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ 
-                display: 'block', 
-                fontSize: '13px', 
-                fontWeight: 600, 
-                marginBottom: '8px',
-                color: 'var(--text-secondary)'
-              }}>
-                To
-              </label>
-              <select 
-                className="select-field"
-                value={selectedUser}
-                onChange={(e) => setSelectedUser(e.target.value)}
-              >
-                <option value="">Select a user...</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.displayName} ({u.location || 'Remote'})
-                  </option>
-                ))}
-              </select>
-            </div>
+                {/* Messages */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {messages.length === 0 ? (
+                    <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px' }}>
+                      No messages yet. Start the conversation!
+                    </p>
+                  ) : (
+                    messages.map((msg, idx) => {
+                      const isMe = msg.senderId === user?.uid;
+                      const showDate = idx === 0 || 
+                        formatDate(messages[idx - 1].createdAt) !== formatDate(msg.createdAt);
+                      
+                      return (
+                        <div key={msg.id}>
+                          {showDate && (
+                            <div style={{ textAlign: 'center', margin: '16px 0' }}>
+                              <span style={{ fontSize: '12px', color: 'var(--text-muted)', background: 'var(--surface2)', padding: '4px 12px', borderRadius: '12px' }}>
+                                {formatDate(msg.createdAt)}
+                              </span>
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
+                            <div style={{ 
+                              maxWidth: '70%', 
+                              padding: '12px 16px', 
+                              borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                              background: isMe ? 'var(--teal)' : 'var(--surface2)',
+                              color: isMe ? 'white' : 'var(--text-primary)'
+                            }}>
+                              <p style={{ fontSize: '14px', lineHeight: 1.5 }}>{msg.text}</p>
+                              <p style={{ fontSize: '11px', opacity: 0.7, marginTop: '4px', textAlign: 'right' }}>
+                                {formatTime(msg.createdAt)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
 
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ 
-                display: 'block', 
-                fontSize: '13px', 
-                fontWeight: 600, 
-                marginBottom: '8px',
-                color: 'var(--text-secondary)'
-              }}>
-                Message
-              </label>
-              <textarea
-                className="textarea-field"
-                placeholder="Share support details, ask for files, or coordinate timing..."
-                rows={5}
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-              />
-            </div>
-
-            <button 
-              className="btn-primary"
-              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-              onClick={handleSendMessage}
-              disabled={!selectedUser || !messageText.trim() || sending}
-            >
-              <Send size={16} />
-              {sending ? 'Sending...' : 'Send'}
-            </button>
+                {/* Input */}
+                <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)', display: 'flex', gap: '12px' }}>
+                  <input
+                    type="text"
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Type a message..."
+                    style={{
+                      flex: 1,
+                      padding: '12px 16px',
+                      borderRadius: '24px',
+                      border: '1px solid var(--border-md)',
+                      fontSize: '14px',
+                      outline: 'none'
+                    }}
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!messageText.trim() || sending}
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '50%',
+                      border: 'none',
+                      background: messageText.trim() ? 'var(--teal)' : 'var(--border)',
+                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: messageText.trim() ? 'pointer' : 'not-allowed'
+                    }}
+                  >
+                    <Send size={20} />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', padding: '48px' }}>
+                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                  <Send size={32} color="var(--text-muted)" />
+                </div>
+                <p style={{ fontSize: '16px', color: 'var(--text-muted)', textAlign: 'center' }}>
+                  Select a conversation to start messaging
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -88,6 +88,11 @@ function AppRoutes() {
           <MessagesPage />
         </ProtectedRoute>
       } />
+      <Route path="/messages/:conversationId" element={
+        <ProtectedRoute>
+          <MessagesPage />
+        </ProtectedRoute>
+      } />
       <Route path="/leaderboard" element={
         <RoleProtectedRoute requireCanHelp={true}>
           <LeaderboardPage />
