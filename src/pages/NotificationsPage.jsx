@@ -74,6 +74,13 @@ const NotificationsPage = () => {
       
       // Cache the data
       cacheData(CACHE_KEY, { notifications: notifs, unreadCount: unread }, CACHE_DURATION);
+    }, (error) => {
+      console.error('Error loading notifications:', error);
+      if (error.message?.includes('index')) {
+        console.error('Firestore index required! Create composite index on: toUid (Ascending) + createdAt (Descending)');
+        alert('Database index required. Please check console for instructions.');
+      }
+      setLoading(false);
     });
 
     return () => unsubscribe();

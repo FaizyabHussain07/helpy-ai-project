@@ -37,6 +37,7 @@ const MessagesPage = () => {
         id: doc.id,
         ...doc.data()
       }));
+      console.log('Loaded conversations:', convos);
       setConversations(convos);
       setLoading(false);
       
@@ -48,54 +49,91 @@ const MessagesPage = () => {
         });
       });
       
+      console.log('Fetching user IDs:', Array.from(userIds));
+      
       // Fetch user details
       const usersData = {};
       for (const uid of userIds) {
-        if (!users[uid]) {
+        try {
           const userDoc = await getDoc(doc(db, 'users', uid));
           if (userDoc.exists()) {
             usersData[uid] = userDoc.data();
+            console.log('Loaded user:', uid, userDoc.data().displayName);
+          } else {
+            console.log('User not found:', uid);
+            usersData[uid] = { displayName: 'Unknown User', id: uid };
           }
+        } catch (err) {
+          console.error('Error loading user:', uid, err);
+          usersData[uid] = { displayName: 'Error Loading', id: uid };
         }
       }
+      
       if (Object.keys(usersData).length > 0) {
         setUsers(prev => ({ ...prev, ...usersData }));
       }
-      
-      // If URL has conversation ID, select it
-      if (urlConversationId && !activeConversation) {
-        const targetConvo = convos.find(c => c.id === urlConversationId);
-        if (targetConvo) {
-          selectConversation(targetConvo);
-        }
+    }, (error) => {
+      console.error('Error loading conversations:', error);
+      if (error.message?.includes('index')) {
+        console.error('Firestore index required! Create composite index on: participants (Ascending) + updatedAt (Descending)');
+        alert('Database index required. Please check console for instructions.');
       }
+      setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [user, urlConversationId]);
+  }, [user]);
+  
+  // Handle URL conversation ID separately
+  useEffect(() => {
+    if (urlConversationId && conversations.length > 0) {
+      const targetConvo = conversations.find(c => c.id === urlConversationId);
+      if (targetConvo && !activeConversation) {
+        selectConversation(targetConvo);
+      }
+    }
+  }, [urlConversationId, conversations]);
 
   const selectConversation = async (convo) => {
+    console.log('Selecting conversation:', convo.id);
     setActiveConversation(convo);
     
     // Get other participant
     const otherId = convo.participants?.find(id => id !== user?.uid);
+    console.log('Other participant ID:', otherId);
+    
     if (otherId) {
       if (!users[otherId]) {
-        const userDoc = await getDoc(doc(db, 'users', otherId));
-        if (userDoc.exists()) {
-          setUsers(prev => ({ ...prev, [otherId]: userDoc.data() }));
-          setOtherUser(userDoc.data());
+        try {
+          const userDoc = await getDoc(doc(db, 'users', otherId));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUsers(prev => ({ ...prev, [otherId]: userData }));
+            setOtherUser(userData);
+            console.log('Loaded other user:', userData.displayName);
+          } else {
+            console.log('Other user not found in DB');
+            setOtherUser({ displayName: 'Unknown User', id: otherId });
+          }
+        } catch (err) {
+          console.error('Error loading other user:', err);
+          setOtherUser({ displayName: 'Error Loading', id: otherId });
         }
       } else {
         setOtherUser(users[otherId]);
+        console.log('Using cached user:', users[otherId].displayName);
       }
     }
     
     // Get request info if available
     if (convo.requestId) {
-      const requestDoc = await getDoc(doc(db, 'requests', convo.requestId));
-      if (requestDoc.exists()) {
-        setRequestInfo(requestDoc.data());
+      try {
+        const requestDoc = await getDoc(doc(db, 'requests', convo.requestId));
+        if (requestDoc.exists()) {
+          setRequestInfo(requestDoc.data());
+        }
+      } catch (err) {
+        console.error('Error loading request info:', err);
       }
     }
     

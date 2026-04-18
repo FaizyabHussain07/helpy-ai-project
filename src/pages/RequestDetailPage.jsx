@@ -51,27 +51,41 @@ const RequestDetailPage = () => {
     }
   };
 
+  const [error, setError] = useState('');
+
   const handleHelp = async () => {
-    if (!user || !request) return;
+    if (!user || !request) {
+      console.log('Cannot help: user or request is null');
+      return;
+    }
     
+    console.log('Starting handleHelp...');
     setActionLoading(true);
+    setError('');
+    
     try {
       const requestRef = doc(db, 'requests', id);
       
       // Add helper to request with pending status
+      // Note: serverTimestamp() can't be used inside arrayUnion, use regular Date
       const helperData = {
         uid: user.uid,
         name: userData?.displayName || user.displayName,
         skills: userData?.skills || [],
         trustScore: userData?.trustScore || 50,
-        status: 'pending', // pending, accepted, rejected
-        offeredAt: serverTimestamp()
+        status: 'pending',
+        offeredAt: new Date().toISOString() // Use ISO string instead of serverTimestamp
       };
+      
+      console.log('Adding helper data:', helperData);
       
       await updateDoc(requestRef, {
         helpers: arrayUnion(helperData),
-        helperCount: increment(1)
+        helperCount: increment(1),
+        updatedAt: serverTimestamp() // This works because it's at the top level
       });
+
+      console.log('Helper added successfully');
 
       // Create notification for request author
       await addDoc(collection(db, 'notifications'), {
@@ -85,12 +99,16 @@ const RequestDetailPage = () => {
         createdAt: serverTimestamp()
       });
 
-      // Show browser notification to seeker (if online)
-      // This will be handled by the notifications system
+      console.log('Notification created');
 
-      fetchRequest();
+      // Refresh request data
+      await fetchRequest();
+      
+      alert('Help offered successfully! The requester has been notified.');
     } catch (err) {
       console.error('Error offering help:', err);
+      setError('Failed to offer help: ' + (err.message || 'Unknown error'));
+      alert('Error: ' + (err.message || 'Failed to offer help'));
     } finally {
       setActionLoading(false);
     }

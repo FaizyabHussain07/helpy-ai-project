@@ -267,8 +267,14 @@ export const subscribeToPushNotifications = async () => {
     
     if (!subscription) {
       // Request new subscription
-      // Note: In production, you'd get this from your server
-      const vapidPublicKey = 'YOUR_VAPID_PUBLIC_KEY'; // Replace with your key
+      // Note: Get this from Firebase Console > Project Settings > Cloud Messaging
+      const vapidPublicKey = import.meta.env.VITE_FIREBASE_VAPID_KEY || '';
+      
+      // Skip if VAPID key is not configured (placeholder or empty)
+      if (!vapidPublicKey || vapidPublicKey.includes('YOUR_') || vapidPublicKey.length < 20) {
+        console.log('Push notifications skipped: VAPID key not configured');
+        return null;
+      }
       
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
