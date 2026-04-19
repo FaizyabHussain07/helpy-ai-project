@@ -95,7 +95,7 @@ const OnboardingPage = () => {
       return;
     }
 
-    // Helper-specific validation (step 3 for helper, step 3 for both)
+    // Helper-specific validation (step 3 for helper)
     if (step === 3 && selectedRole === 'helper') {
       if (skills.length === 0) {
         alert('Please select at least one skill to continue');
@@ -103,7 +103,7 @@ const OnboardingPage = () => {
       }
     }
 
-    // Seeker-specific validation (step 3 for seeker, step 4 for both)
+    // Seeker-specific validation (step 3 for seeker)
     if (selectedRole === 'seeker' && step === 3) {
       if (helpNeeds.length === 0) {
         alert('Please select at least one help category to continue');
@@ -111,19 +111,19 @@ const OnboardingPage = () => {
       }
     }
 
-    // Both role validation - step 3 is helper, step 4 is seeker
+    // Both role validation - step 3 is seeker, step 4 is helper
     if (selectedRole === 'both') {
       if (step === 3) {
-        // Helper step - only skills required
-        if (skills.length === 0) {
-          alert('Please select at least one skill to continue');
+        // Seeker step - only help needs required
+        if (helpNeeds.length === 0) {
+          alert('Please select at least one help category to continue');
           return;
         }
       }
       if (step === 4) {
-        // Seeker step - only help needs required
-        if (helpNeeds.length === 0) {
-          alert('Please select at least one help category to continue');
+        // Helper step - only skills required
+        if (skills.length === 0) {
+          alert('Please select at least one skill to continue');
           return;
         }
       }
