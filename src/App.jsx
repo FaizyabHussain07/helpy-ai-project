@@ -51,6 +51,7 @@ function AppRoutes() {
       {/* Public Routes */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<PublicRoute><AuthPage /></PublicRoute>} />
+      <Route path="/signup" element={<PublicRoute><AuthPage defaultTab="signup" /></PublicRoute>} />
       
       {/* Protected Routes */}
       <Route path="/onboarding" element={

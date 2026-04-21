@@ -9,9 +9,9 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { Eye, EyeOff } from 'lucide-react';
 
-const AuthPage = () => {
+const AuthPage = ({ defaultTab = 'login' }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('login');
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);

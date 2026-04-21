@@ -119,7 +119,24 @@ const Navbar = ({
             {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
 
-          {user && (
+          {!user ? (
+            <>
+              <button 
+                className="btn-outline desktop-only"
+                onClick={() => navigate('/login')}
+                style={{ padding: '8px 16px', fontSize: '14px' }}
+              >
+                Login
+              </button>
+              <button 
+                className="btn-primary desktop-only"
+                onClick={() => navigate('/signup')}
+                style={{ padding: '8px 16px', fontSize: '14px' }}
+              >
+                Sign Up
+              </button>
+            </>
+          ) : (
             <>
               <button 
                 className="notification-btn desktop-only"
@@ -194,6 +211,27 @@ const Navbar = ({
                 );
               })}
               
+              {!user && (
+                <>
+                  <Link
+                    to="/login"
+                    className="mobile-menu-link"
+                    onClick={closeMobileMenu}
+                  >
+                    <User size={20} />
+                    <span>Login</span>
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="mobile-menu-link"
+                    onClick={closeMobileMenu}
+                  >
+                    <PlusCircle size={20} />
+                    <span>Sign Up</span>
+                  </Link>
+                </>
+              )}
+
               {user && (
                 <Link
                   to="/notifications"

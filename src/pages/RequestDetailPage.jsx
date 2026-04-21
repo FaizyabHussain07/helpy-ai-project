@@ -88,7 +88,8 @@ const RequestDetailPage = () => {
       console.log('Helper added successfully');
 
       // Create notification for request author
-      await addDoc(collection(db, 'notifications'), {
+      console.log('Creating notification for author:', request.authorId);
+      const notificationRef = await addDoc(collection(db, 'notifications'), {
         toUid: request.authorId,
         fromUid: user.uid,
         fromName: userData?.displayName || user.displayName,
@@ -99,7 +100,7 @@ const RequestDetailPage = () => {
         createdAt: serverTimestamp()
       });
 
-      console.log('Notification created');
+      console.log('Notification created with ID:', notificationRef.id);
 
       // Refresh request data
       await fetchRequest();

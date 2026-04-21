@@ -46,13 +46,19 @@ const NotificationsPage = () => {
         ...doc.data()
       }));
       
+      console.log('Loaded notifications:', notifs.length, 'notifications');
+      console.log('Notifications:', notifs);
+      
       // Check for new notifications and show browser notification
       const currentUnread = notifs.filter(n => !n.read);
       const prevUnread = notifications.filter(n => !n.read);
       
+      console.log('Unread notifications:', currentUnread.length);
+      
       // If there are new unread notifications
       if (currentUnread.length > prevUnread.length && !loading) {
         const latestNotif = currentUnread[0];
+        console.log('New notification:', latestNotif);
         showBrowserNotification(
           getNotificationTitle(latestNotif.type),
           {
